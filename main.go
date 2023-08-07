@@ -43,6 +43,28 @@ func (s *Server) handlergetFact(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (s *Server) handlerPostFact(w http.ResponseWriter, r *http.Request) {
+	coll := s.client.Database("catfact").Collection("fact")
+
+	fmt.Println("Request Body: ", r.Body)
+	var catFact bson.M
+	err := json.NewDecoder(r.Body).Decode(&catFact)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = coll.InsertOne(context.TODO(), catFact)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(catFact)
+
+}
+
 type CatFactWorker struct {
 	client *mongo.Client
 }
@@ -96,5 +118,6 @@ func main() {
 
 	server := NewServer(client)
 	http.HandleFunc("/facts", server.handlergetFact)
+	http.HandleFunc("/add-fact", server.handlerPostFact)
 	http.ListenAndServe(":3000", nil)
 }
